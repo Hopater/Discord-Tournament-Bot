@@ -47,18 +47,30 @@ async def start_bracket(ctx):
         await ctx.send(f"Next match: {next_match[0]} vs {next_match[1]}")
 
 @bot.command()
-async def result(ctx, p1: str, score1: int, p2: str, score2: int):
+async def result(ctx, *, args: str):
     if ctx.author.id != tournament.host_id:
         return await ctx.send("Only the host can report results.")
+    
+    import shlex
+    try:
+        parts = shlex.split(args)  # properly handles quoted names
+        p1, score1, p2, score2 = parts
+        score1 = int(score1)
+        score2 = int(score2)
+    except Exception:
+        return await ctx.send("❌ Usage: /result \"Player One\" 3 \"Player Two\" 1")
+
     winner = p1 if score1 > score2 else p2
     tournament.record_result(p1, p2, winner)
     draw_bracket(tournament)
     await ctx.send(f"✅ Result recorded: {winner} wins!")
     await ctx.send(file=discord.File("bracket.png"))
+
     next_match = tournament.get_next_match()
     if next_match:
         await ctx.send(f"Next match: {next_match[0]} vs {next_match[1]}")
     else:
         await ctx.send(f"🏆 Tournament winner: {winner}!")
+
 
 bot.run(os.getenv("DISCORD_TOKEN"))
